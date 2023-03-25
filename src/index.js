@@ -6,20 +6,20 @@ const port = 2000;
 
 // Datos de prueba
 const usuarios = [
-  { username: 'admin', fullname: 'Administrador', password: '123456', role: 1 },
-  { username: 'usuario', fullname: 'Usuario', password: 'abcdef', role: 2 },
-  { username: 'usuario2', fullname: 'Usuario 2', password: 'qwerty', role: 2 }
+  { username: 'admin', fullname: 'Administrador', password: '123456', role: '1' },
+  { username: 'usuario', fullname: 'Usuario', password: 'abcdef', role: '2' },
+  { username: 'usuario2', fullname: 'Usuario 2', password: 'qwerty', role: '2' }
 ];
 
 // Middleware para validar el usuario y la contraseña
 function validarUsuario(req, res, next) {
   const { username, password } = req.body;
   const usuario = usuarios.find(
-    (u) => u.username === username && u.password === password
+    x => x.username === username && x.password === password
   );
   if (usuario) {
     // Asignar un valor predeterminado de 1 (administrador) al rol del usuario
-    usuario.role = 2;
+    usuario.role = '1';
     req.usuario = usuario;
     next();
   } else {
@@ -28,24 +28,23 @@ function validarUsuario(req, res, next) {
 }
 
 
-// Middleware para validar el rol de usuario
-// Middleware para validar el rol de usuario
+
 function validarRol(roles) {
-  return function(req, res, next) {
-    // Obtener el rol del usuario desde el objeto de solicitud
+  return function (req, res, next) {
+
     const { role } = req.usuario;
 
-    // Verificar si el rol del usuario está incluido en la lista de roles permitidos
+
     if (roles.includes(role)) {
-      // Si el rol es válido, pasar al siguiente middleware o ruta
+
       next();
     } else {
-      // Si el rol no es válido, enviar un error 403 (Forbidden)
+
       res.status(403).send('Acceso denegado');
     }
   };
 }
-// Middleware para asignar el rol predeterminado a usuarios sin rol
+
 function asignarRolPredeterminado(req, res, next) {
   const { usuario } = req;
   if (usuario && !usuario.role) {
@@ -55,28 +54,37 @@ function asignarRolPredeterminado(req, res, next) {
 }
 
 app.use(asignarRolPredeterminado);
-// parse application/x-www-form-urlencoded
+
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// parse application/json
+
 app.use(bodyParser.json());
 
-// Página de inicio
+
 app.get('/', (req, res) => {
   res.sendFile('views/index.html', { root: __dirname });
 });
 
 // Iniciar sesión
-app.post("/login", validarUsuario, (req, res) => {
-  const usuario = req.usuario;
-  if (usuario.role === 1) {
-    res.redirect("/controlpanel");
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  let userFind = usuarios.find(
+    (usuario) => usuario.username === username && usuario.password === password
+  );
+  console.log(userFind);
+
+  if (userFind) {
+    if (userFind.role == "1") {
+      res.redirect("/controlpanel");
+    } else if (userFind.role == "2") {
+      res.redirect("/quienessomos");
+    } else {
+      res.send("usuario no registrado");
+    }
   } else {
-    res.redirect("/customers");
+    res.send("Revise a ver ¿Si esta registrado?");
   }
 });
-
-
 // Ruta de controlpanel
 app.get('/controlpanel', validarRol([1]), (req, res) => {
   res.send('Control Panel');
@@ -89,7 +97,7 @@ app.get('/customers', validarRol([1, 2]), (req, res) => {
 
 // Ruta de quienessomos
 app.get('/quienessomos', (req, res) => {
-  res.send('Quiénes somos');
+  res.sendFile("views/quienessomos.html", { root: __dirname });
 });
 
 // Ruta de contacts
